@@ -20,7 +20,8 @@ def detect_and_draw_face(frame):
 
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         face = frame[y:y+h, x:x+w]
-        rgb_face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+        resized = cv2.resize(face, (37, 50))
+        rgb_face = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
         rgb_face = rgb_face.astype('float32') / 255.0
     if rgb_face is None:
         return None, frame
