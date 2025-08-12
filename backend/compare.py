@@ -20,20 +20,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
-
-
-lfw_people = fetch_lfw_people(min_faces_per_person=10, resize=0.4, color=True)
-
-n_samples, h, w, c = lfw_people.images.shape
-
-X = lfw_people.images
-n_features = lfw_people.data.shape[1]
-
-y = lfw_people.target
-target_names = lfw_people.target_names
-n_classes = target_names.shape[0]
-
-
 import matplotlib.pyplot as plt
 
 # Assuming X and y are already defined as in the provided code
@@ -63,7 +49,7 @@ class ContrastiveLoss(nn.Module):
 
 # Feature extractor based on Classifier
 class FeatureExtractor(nn.Module):
-    def __init__(self):
+    def __init__(self, n_features=37*50*3):
         super(FeatureExtractor, self).__init__()
         self.fc1 = nn.Linear(n_features, 256)
         self.relu = nn.ReLU()
@@ -111,10 +97,10 @@ def same_person(img1, img2):
     x2 = torch.tensor(img2.reshape(-1), dtype=torch.float32).unsqueeze(0)
     # Run through model
     out = model(x1, x2)
-    print(out)
+    # print(out)
     return out
-x1 = torch.tensor(X[0].reshape(-1), dtype=torch.float32).unsqueeze(0)
-x2 = torch.tensor(X[3].reshape(-1), dtype=torch.float32).unsqueeze(0)
+# x1 = torch.tensor(X[0].reshape(-1), dtype=torch.float32).unsqueeze(0)
+# x2 = torch.tensor(X[3].reshape(-1), dtype=torch.float32).unsqueeze(0)
 
 
 def find_two_same_person_indices(y):
