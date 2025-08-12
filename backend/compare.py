@@ -1,6 +1,7 @@
 ## dataset prep
 from time import time
-
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 import matplotlib.pyplot as plt
 from scipy.stats import loguniform
 
@@ -21,7 +22,37 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 
 
+lfw_people = fetch_lfw_people(min_faces_per_person=10, resize=0.4, color=True)
+
+# introspect the images arrays to find the shapes (for plotting)
+n_samples, h, w, c = lfw_people.images.shape
+
+# for machine learning we use the 2 data directly (as relative pixel
+# positions info is ignored by this model)
+X = lfw_people.images
+n_features = lfw_people.data.shape[1]
+
+# the label to predict is the id of the person
+y = lfw_people.target
+target_names = lfw_people.target_names
+n_classes = target_names.shape[0]
+
+
+import matplotlib.pyplot as plt
+
+# Assuming X and y are already defined as in the provided code
+# fig, axes = plt.subplots(2, 5, figsize=(15, 8))
+
+# for i, ax in enumerate(axes.flat):
+#     ax.imshow(X[i])
+#     ax.set_title(f"Label: {target_names[y[i]]}")
+#     ax.axis('off')  # Hide axis ticks and labels
+
+# plt.tight_layout()
+# plt.show()
+
 ## contrastive loss
+
 class ContrastiveLoss(nn.Module):
     def __init__(self, margin=1.0):
         #TODO
@@ -34,8 +65,6 @@ class ContrastiveLoss(nn.Module):
       loss = torch.mean(sim_loss + dis_loss)    ## get the average loss over the batch since we do batches
       return loss
 
-
-##TODO
 # Feature extractor based on Classifier
 class FeatureExtractor(nn.Module):
     def __init__(self):
@@ -67,3 +96,56 @@ class SiameseNetwork_dist_withoutCNN(nn.Module):
         ##return self.sigmoid(out)
         return torch.norm(f1 - f2, p=2, dim=1)     ## so we just get euclidean distance of the embeddings directly, and keep the dimensions for every item in the batch
 
+
+model = SiameseNetwork_dist_withoutCNN()
+
+path = 'backend/best_model.pth'
+state_dict = torch.load(path)
+model.load_state_dict(state_dict)
+
+model.eval()
+
+def same_person(img1, img2):
+    """
+    Selects two examples from X, preprocesses them, and runs them through the model.
+    idx1, idx2: indices of the examples to use (default: 0 and 1)
+    """
+    # Flatten and convert to torch tensors
+    x1 = torch.tensor(img1.reshape(-1), dtype=torch.float32).unsqueeze(0)
+    x2 = torch.tensor(img2.reshape(-1), dtype=torch.float32).unsqueeze(0)
+    # Run through model
+    out = model(x1, x2)
+    print(out)
+    return bool(out < 0.5)
+x1 = torch.tensor(X[0].reshape(-1), dtype=torch.float32).unsqueeze(0)
+x2 = torch.tensor(X[3].reshape(-1), dtype=torch.float32).unsqueeze(0)
+
+
+def find_two_same_person_indices(y):
+    indices = []
+    seen = set()
+    
+    for i in range(len(y)):
+        if len(indices) >= 10:
+            return indices
+        for j in range(i+1, len(y)):
+            if y[i] == y[j]:
+                if y[i] not in seen:
+                    indices.append((i, j))
+                    seen.add(y[i])
+    return indices
+
+indices = find_two_same_person_indices(y)
+idx1, idx2 = indices[8]
+print(f"Indices of same person: {idx1}, {idx2} (Label: {target_names[y[idx1]]})")
+print(same_person(X[idx1], X[2]))
+
+fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+axes[0].imshow(X[idx1])
+axes[0].set_title(f"X1 (Label: {target_names[y[idx1]]})")
+axes[0].axis('off')
+axes[1].imshow(X[2])
+axes[1].set_title(f"X2 (Label: {target_names[y[2]]})")
+axes[1].axis('off')
+plt.tight_layout()
+plt.show()
