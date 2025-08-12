@@ -24,15 +24,11 @@ from torch.utils.data import TensorDataset, DataLoader
 
 lfw_people = fetch_lfw_people(min_faces_per_person=10, resize=0.4, color=True)
 
-# introspect the images arrays to find the shapes (for plotting)
 n_samples, h, w, c = lfw_people.images.shape
 
-# for machine learning we use the 2 data directly (as relative pixel
-# positions info is ignored by this model)
 X = lfw_people.images
 n_features = lfw_people.data.shape[1]
 
-# the label to predict is the id of the person
 y = lfw_people.target
 target_names = lfw_people.target_names
 n_classes = target_names.shape[0]
@@ -116,7 +112,7 @@ def same_person(img1, img2):
     # Run through model
     out = model(x1, x2)
     print(out)
-    return bool(out < 0.5)
+    return out
 x1 = torch.tensor(X[0].reshape(-1), dtype=torch.float32).unsqueeze(0)
 x2 = torch.tensor(X[3].reshape(-1), dtype=torch.float32).unsqueeze(0)
 
@@ -135,17 +131,17 @@ def find_two_same_person_indices(y):
                     seen.add(y[i])
     return indices
 
-indices = find_two_same_person_indices(y)
-idx1, idx2 = indices[8]
-print(f"Indices of same person: {idx1}, {idx2} (Label: {target_names[y[idx1]]})")
-print(same_person(X[idx1], X[2]))
+# indices = find_two_same_person_indices(y)
+# idx1, idx2 = indices[8]
+# print(f"Indices of same person: {idx1}, {idx2} (Label: {target_names[y[idx1]]})")
+# print(same_person(X[idx1], X[2]))
 
-fig, axes = plt.subplots(1, 2, figsize=(8, 4))
-axes[0].imshow(X[idx1])
-axes[0].set_title(f"X1 (Label: {target_names[y[idx1]]})")
-axes[0].axis('off')
-axes[1].imshow(X[2])
-axes[1].set_title(f"X2 (Label: {target_names[y[2]]})")
-axes[1].axis('off')
-plt.tight_layout()
-plt.show()
+# fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+# axes[0].imshow(X[idx1])
+# axes[0].set_title(f"X1 (Label: {target_names[y[idx1]]})")
+# axes[0].axis('off')
+# axes[1].imshow(X[2])
+# axes[1].set_title(f"X2 (Label: {target_names[y[2]]})")
+# axes[1].axis('off')
+# plt.tight_layout()
+# plt.show()
